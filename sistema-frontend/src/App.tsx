@@ -1,8 +1,9 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './core/context/AuthContext';
+import { AuthProvider } from './core/context/AuthContext';
 import { AuthLayout } from './presentation/layouts/AuthLayout';
 import { AdminLayout } from './presentation/layouts/AdminLayout';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useAuth } from './core/hooks/useAuth';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();

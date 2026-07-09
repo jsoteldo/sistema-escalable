@@ -118,6 +118,13 @@ export const AdminLayout: React.FC = () => {
                         Eliminar Registro (Requiere Ventas:delete)
                       </button>
                     </ProtectedComponent>
+
+                    {/* Elemento ocultado si no tiene permiso */}
+                    <ProtectedComponent module="Ventas" action="update">
+                      <button className="btn btn-warning">
+                        Editar Venta (Oculto - Requiere Ventas:update)
+                      </button>
+                    </ProtectedComponent>
                   </div>
                 </div>
               </div>

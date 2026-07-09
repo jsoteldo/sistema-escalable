@@ -63,4 +63,21 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+  // 3. Local Login validation
+  async validateLocalUser(email: string, password: string) {
+    if (email === 'admin@correo.com' && password === 'admin123') {
+      const mockUser = {
+        id: 'mock-user-id-admin',
+        email: 'admin@correo.com',
+        roleName: 'ADMIN',
+        permissions: [
+          { module: 'Ventas', actions: ['read', 'create', 'delete', 'update'] },
+          { module: 'Clientes', actions: ['read'] },
+        ],
+      };
+      return this.generateJwt(mockUser);
+    }
+    throw new UnauthorizedException('Credenciales inválidas');
+  }
 }

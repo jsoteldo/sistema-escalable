@@ -2,15 +2,20 @@ import React, { useState } from 'react';
 import { useAuth } from '../../core/hooks/useAuth';
 
 export const AuthLayout: React.FC = () => {
-  const { loginWithSocialToken } = useAuth();
+  const { login, loginWithSocialToken, isLoading, error } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [registeredStatus, setRegisteredStatus] = useState<string | null>(null);
 
-  const handleLocalRegister = (e: React.FormEvent) => {
+  const handleLocalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate user signup with status 'PENDIENTE'
-    setRegisteredStatus('PENDIENTE');
+    try {
+      const data = await login(email, password);
+      console.log("Login OK", data);
+    } catch (err) {
+      // Error is caught and set inside hook state
+      console.error("Login failed:", err);
+    }
   };
 
   const handleSocialMockLogin = async (provider: 'google' | 'facebook') => {
@@ -40,7 +45,13 @@ export const AuthLayout: React.FC = () => {
           </div>
         ) : (
           <div>
-            <form onSubmit={handleLocalRegister}>
+            {error && (
+              <div className="alert alert-danger text-center py-2 mb-3" style={{ fontSize: '0.9rem' }} role="alert">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleLocalLogin}>
               <div className="mb-3">
                 <label className="form-label">Email</label>
                 <input
@@ -50,6 +61,7 @@ export const AuthLayout: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="ejemplo@correo.com"
                   required
+                  disabled={isLoading}
                 />
               </div>
               <div className="mb-3">
@@ -61,11 +73,19 @@ export const AuthLayout: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary w-100 mb-3 fw-semibold">
-                Registrarse (Modo Demo: PENDIENTE)
+              <button type="submit" className="btn btn-primary w-100 mb-3 fw-semibold" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Cargando...
+                  </>
+                ) : (
+                  'Iniciar Sesión'
+                )}
               </button>
             </form>
 
@@ -77,6 +97,7 @@ export const AuthLayout: React.FC = () => {
               <button
                 className="btn btn-danger w-50 d-flex align-items-center justify-content-center gap-2"
                 onClick={() => handleSocialMockLogin('google')}
+                disabled={isLoading}
               >
                 <span>Google</span>
               </button>
@@ -84,6 +105,7 @@ export const AuthLayout: React.FC = () => {
                 className="btn btn-primary w-50 d-flex align-items-center justify-content-center gap-2"
                 onClick={() => handleSocialMockLogin('facebook')}
                 style={{ backgroundColor: '#3b5998' }}
+                disabled={isLoading}
               >
                 <span>Facebook</span>
               </button>

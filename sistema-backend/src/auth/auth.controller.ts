@@ -45,4 +45,10 @@ export class AuthController {
 
     return this.authService.generateJwt(mockUser);
   }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() body: any) {
+    return this.authService.validateLocalUser(body.email, body.password);
+  }
 }
