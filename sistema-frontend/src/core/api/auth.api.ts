@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient from './axios.config';
 
 export const loginService = async (email: string, password: string) => {
   try {

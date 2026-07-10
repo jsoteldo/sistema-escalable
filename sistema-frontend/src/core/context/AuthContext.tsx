@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import apiClient from '../api/client';
+import apiClient from '../api/axios.config';
 import { loginService } from '../api/auth.api';
 
 export interface UserPermission {

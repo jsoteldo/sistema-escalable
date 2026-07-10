@@ -1,16 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../core/hooks/useAuth';
 import { usePermissions } from '../../core/hooks/usePermissions';
 import { ProtectedComponent } from '../components/ProtectedComponent';
+import { UsuariosPage } from '../pages/UsuariosPage';
 
-export const AdminLayout: React.FC = () => {
+interface AdminLayoutProps {
+  initialPath?: string;
+}
+
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ initialPath }) => {
   const { logout, user } = useAuth();
   const { userRole } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeMenu, setActiveMenu] = useState<string>('dashboard');
+
+  // Helper to derive active menu key from standard pathnames
+  const getInitialMenu = (path?: string) => {
+    if (path === '/usuarios') return 'usuarios';
+    if (path === '/ventas') return 'ventas';
+    if (path === '/clientes') return 'clientes';
+    return 'dashboard';
+  };
+
+  const [activeMenu, setActiveMenu] = useState<string>(getInitialMenu(initialPath));
+
+  // Sync menu state with browser path if updated (e.g., from browser back/forward buttons)
+  useEffect(() => {
+    if (initialPath) {
+      setActiveMenu(getInitialMenu(initialPath));
+    }
+  }, [initialPath]);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const navigateTo = (menuKey: string, path: string) => {
+    setActiveMenu(menuKey);
+    window.history.pushState({}, '', path);
   };
 
   return (
@@ -26,16 +52,25 @@ export const AdminLayout: React.FC = () => {
           <nav className="nav flex-column gap-1 flex-grow-1">
             <button
               className={`nav-link btn text-start text-white border-0 py-2 px-3 rounded ${activeMenu === 'dashboard' ? 'bg-primary' : ''}`}
-              onClick={() => setActiveMenu('dashboard')}
+              onClick={() => navigateTo('dashboard', '/')}
             >
               📊 Dashboard
             </button>
 
             {/* Dynamic Protected Side Menu links */}
+            <ProtectedComponent module="Usuarios" action="read">
+              <button
+                className={`nav-link btn text-start text-white border-0 py-2 px-3 rounded ${activeMenu === 'usuarios' ? 'bg-primary' : ''}`}
+                onClick={() => navigateTo('usuarios', '/usuarios')}
+              >
+                👥 Usuarios (Módulo Protegido)
+              </button>
+            </ProtectedComponent>
+
             <ProtectedComponent module="Ventas" action="read">
               <button
                 className={`nav-link btn text-start text-white border-0 py-2 px-3 rounded ${activeMenu === 'ventas' ? 'bg-primary' : ''}`}
-                onClick={() => setActiveMenu('ventas')}
+                onClick={() => navigateTo('ventas', '/ventas')}
               >
                 💰 Ventas (Módulo Protegido)
               </button>
@@ -44,7 +79,7 @@ export const AdminLayout: React.FC = () => {
             <ProtectedComponent module="Clientes" action="read">
               <button
                 className={`nav-link btn text-start text-white border-0 py-2 px-3 rounded ${activeMenu === 'clientes' ? 'bg-primary' : ''}`}
-                onClick={() => setActiveMenu('clientes')}
+                onClick={() => navigateTo('clientes', '/clientes')}
               >
                 👥 Clientes (Módulo Protegido)
               </button>
@@ -128,6 +163,10 @@ export const AdminLayout: React.FC = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeMenu === 'usuarios' && (
+              <UsuariosPage />
             )}
 
             {activeMenu === 'ventas' && (
