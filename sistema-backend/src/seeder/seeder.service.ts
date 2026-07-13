@@ -26,7 +26,7 @@ export class SeederService implements OnModuleInit {
           description: 'Administrador del sistema con todos los accesos',
           permissions: [
             { module: 'Ventas', actions: ['create', 'read', 'update', 'delete'] },
-            { module: 'Clientes', actions: ['read'] },
+            { module: 'Clientes', actions: ['create', 'read', 'update', 'delete'] },
             { module: 'Usuarios', actions: ['create', 'read', 'update', 'delete'] },
           ],
         },
