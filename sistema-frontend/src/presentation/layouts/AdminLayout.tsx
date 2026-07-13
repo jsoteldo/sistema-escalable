@@ -3,6 +3,7 @@ import { useAuth } from '../../core/hooks/useAuth';
 import { usePermissions } from '../../core/hooks/usePermissions';
 import { ProtectedComponent } from '../components/ProtectedComponent';
 import { UsuariosPage } from '../pages/UsuariosPage';
+import { ProductosPage } from '../pages/ProductosPage';
 
 interface AdminLayoutProps {
   initialPath?: string;
@@ -16,6 +17,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ initialPath }) => {
   // Helper to derive active menu key from standard pathnames
   const getInitialMenu = (path?: string) => {
     if (path === '/usuarios') return 'usuarios';
+    if (path === '/productos') return 'productos';
     if (path === '/ventas') return 'ventas';
     if (path === '/clientes') return 'clientes';
     return 'dashboard';
@@ -64,6 +66,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ initialPath }) => {
                 onClick={() => navigateTo('usuarios', '/usuarios')}
               >
                 👥 Usuarios (Módulo Protegido)
+              </button>
+            </ProtectedComponent>
+
+            <ProtectedComponent module="Productos" action="read">
+              <button
+                className={`nav-link btn text-start text-white border-0 py-2 px-3 rounded ${activeMenu === 'productos' ? 'bg-primary' : ''}`}
+                onClick={() => navigateTo('productos', '/productos')}
+              >
+                📦 Productos (Módulo Protegido)
               </button>
             </ProtectedComponent>
 
@@ -167,6 +178,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ initialPath }) => {
 
             {activeMenu === 'usuarios' && (
               <UsuariosPage />
+            )}
+
+            {activeMenu === 'productos' && (
+              <ProductosPage />
             )}
 
             {activeMenu === 'ventas' && (

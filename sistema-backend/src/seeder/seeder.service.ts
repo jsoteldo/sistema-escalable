@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { UserDocument, UserSchemaName } from '../schemas/user.schema';
 import { Role, RoleDocument } from '../schemas/role.schema';
+import { ProductoDocument, ProductoSchemaName } from '../schemas/producto.schema';
 
 @Injectable()
 export class SeederService implements OnModuleInit {
@@ -12,6 +13,7 @@ export class SeederService implements OnModuleInit {
   constructor(
     @InjectModel(UserSchemaName) private readonly userModel: Model<UserDocument>,
     @InjectModel(Role.name) private readonly roleModel: Model<RoleDocument>,
+    @InjectModel(ProductoSchemaName) private readonly productoModel: Model<ProductoDocument>,
   ) {}
 
   async onModuleInit() {
@@ -28,6 +30,7 @@ export class SeederService implements OnModuleInit {
             { module: 'Ventas', actions: ['create', 'read', 'update', 'delete'] },
             { module: 'Clientes', actions: ['read'] },
             { module: 'Usuarios', actions: ['create', 'read', 'update', 'delete'] },
+            { module: 'Productos', actions: ['create', 'read', 'update', 'delete'] },
           ],
         },
         { upsert: true, new: true },
@@ -50,6 +53,44 @@ export class SeederService implements OnModuleInit {
         this.logger.log('Usuario Administrador inicial creado con éxito.');
       } else {
         this.logger.log(`El usuario Administrador (${adminEmail}) ya existe.`);
+      }
+
+      // 3. Seed test Products if empty
+      const productsCount = await this.productoModel.countDocuments();
+      if (productsCount === 0) {
+        this.logger.log('Colección de Productos vacía. Sembrando productos de prueba...');
+        await this.productoModel.create([
+          {
+            nombre: 'Arroz Integral Fino 1kg',
+            codigoBarras: '7791234567890',
+            descripcion: 'Paquete de arroz integral de grano largo fino',
+            categoria: 'ALIMENTOS',
+            precio: 1800,
+            stock: 50,
+            status: 'ACTIVO',
+          },
+          {
+            nombre: 'Sartén Antiadherente 24cm',
+            codigoBarras: '7799876543210',
+            descripcion: 'Sartén de aluminio con revestimiento de teflón',
+            categoria: 'UTENSILIOS',
+            precio: 12500,
+            stock: 15,
+            status: 'ACTIVO',
+          },
+          {
+            nombre: 'Aceite de Girasol 1.5L',
+            codigoBarras: '7794567890123',
+            descripcion: 'Aceite de girasol ideal para cocinar',
+            categoria: 'ALIMENTOS',
+            precio: 3200,
+            stock: 30,
+            status: 'ACTIVO',
+          },
+        ]);
+        this.logger.log('Productos de prueba sembrados correctamente.');
+      } else {
+        this.logger.log('La colección de Productos ya contiene registros.');
       }
 
       this.logger.log('Seeder completado.');
