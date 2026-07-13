@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { getProductos, createProducto, updateProducto } from '../../core/api/productos.api';
+import React, { useEffect, useState, useRef } from 'react';
+import Papa from 'papaparse';
+import { getProductos, createProducto, updateProducto, deleteProducto, importarProductos } from '../../core/api/productos.api';
 import { ProtectedComponent } from '../components/ProtectedComponent';
 
 interface Product {
@@ -45,6 +46,10 @@ export const ProductosPage: React.FC = () => {
     stock: 0,
     status: 'ACTIVO',
   });
+
+  // CSV Preview States
+  const [csvPreview, setCsvPreview] = useState<any[] | null>(null);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
 
   const fetchProductos = async () => {
     try {
@@ -148,6 +153,73 @@ export const ProductosPage: React.FC = () => {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar (inactivar) este producto?')) {
+      try {
+        setLoading(true);
+        setError(null);
+        await deleteProducto(id);
+        await fetchProductos();
+      } catch (err: any) {
+        setError(err.message || 'Error al eliminar el producto');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSVClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvFile(file);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        setCsvPreview(results.data);
+      },
+      error: (err) => {
+        setError(err.message || 'Error al procesar el archivo CSV localmente');
+      },
+    });
+
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const handleCancelImport = () => {
+    setCsvPreview(null);
+    setCsvFile(null);
+  };
+
+  const handleConfirmImport = async () => {
+    if (!csvFile) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await importarProductos(csvFile);
+      alert(`Importación completada con éxito:\n- ${res.successCount} productos creados.\n- ${res.failCount} productos omitidos o fallidos.`);
+    } catch (err: any) {
+      setError(err.message || 'Error al importar los productos');
+      alert(`Error en la importación:\n${err.message || 'Error desconocido'}`);
+    } finally {
+      setCsvPreview(null);
+      setCsvFile(null);
+      await fetchProductos();
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center py-5">
@@ -171,108 +243,191 @@ export const ProductosPage: React.FC = () => {
         </div>
       )}
 
-      {/* AdminLTE Card Style */}
-      <div className="card shadow-sm border-0">
-        <div className="card-header bg-dark text-white d-flex align-items-center justify-content-between py-3">
-          <div className="d-flex align-items-center gap-3">
-            <h5 className="m-0 text-white fw-bold">📦 Lista de Productos</h5>
-            <span className="badge bg-primary px-3 py-2" style={{ fontSize: '0.85rem' }}>{productos.length} Registros</span>
+      {/* CSV Import Preview Mode */}
+      {csvPreview ? (
+        <div className="card shadow-sm border-0 border-top border-warning">
+          <div className="card-header bg-warning text-dark d-flex align-items-center justify-content-between py-3">
+            <div className="d-flex align-items-center gap-3">
+              <h5 className="m-0 fw-bold">📋 Previsualización de Importación</h5>
+              <span className="badge bg-dark px-3 py-2" style={{ fontSize: '0.85rem' }}>{csvPreview.length} Registros Nuevos</span>
+            </div>
           </div>
-          <ProtectedComponent module="Productos" action="create">
-            <button
-              className="btn btn-success btn-sm fw-semibold"
-              onClick={handleOpenModal}
-            >
-              ➕ Agregar Producto
-            </button>
-          </ProtectedComponent>
-        </div>
-        
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-striped table-hover table-bordered m-0 align-middle">
-              <thead className="table-secondary text-uppercase text-muted" style={{ fontSize: '0.85rem' }}>
-                <tr>
-                  <th style={{ width: '150px' }}>Código</th>
-                  <th>Nombre del Producto</th>
-                  <th>Categoría</th>
-                  <th>Precio</th>
-                  <th>Stock</th>
-                  <th style={{ width: '120px' }}>Estado</th>
-                  <th style={{ width: '150px' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.length === 0 ? (
+          
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-striped table-hover table-bordered m-0 align-middle">
+                <thead className="table-warning text-uppercase text-muted" style={{ fontSize: '0.85rem' }}>
                   <tr>
-                    <td colSpan={7} className="text-center py-4 text-muted">
-                      No se encontraron productos disponibles.
-                    </td>
+                    <th style={{ width: '150px' }}>Código</th>
+                    <th>Nombre del Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
                   </tr>
-                ) : (
-                  productos.map((producto) => (
-                    <tr key={producto._id}>
+                </thead>
+                <tbody>
+                  {csvPreview.map((row, idx) => (
+                    <tr key={idx}>
                       <td>
-                        <code className="text-primary fw-bold">{producto.codigoBarras}</code>
+                        <code className="text-dark fw-bold">{row.codigoBarras || row['codigoBarras'] || 'N/A'}</code>
                       </td>
                       <td>
-                        <div>
-                          <span className="fw-semibold">{producto.nombre}</span>
-                          {producto.descripcion && (
-                            <small className="d-block text-muted text-truncate" style={{ maxWidth: '300px' }}>
-                              {producto.descripcion}
-                            </small>
-                          )}
-                        </div>
+                        <span className="fw-semibold">{row.nombre || row['nombre'] || 'N/A'}</span>
                       </td>
                       <td>
                         <span className="badge bg-secondary text-uppercase px-2 py-1.5" style={{ fontSize: '0.75rem' }}>
-                          {producto.categoria}
+                          {row.categoria || row['categoria'] || 'OTROS'}
                         </span>
                       </td>
                       <td className="fw-semibold">
-                        ${producto.precio.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        ${Number(row.precio || row['precio'] || 0).toLocaleString('es-ES', { minimumFractionDigits: 2 })}
                       </td>
-                      <td>
-                        <span className={`fw-bold ${producto.stock <= 5 ? 'text-danger' : 'text-dark'}`}>
-                          {producto.stock}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge px-2.5 py-1.5 ${
-                          producto.status === 'ACTIVO' ? 'bg-success' : 'bg-danger'
-                        }`} style={{ fontSize: '0.75rem' }}>
-                          {producto.status}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <ProtectedComponent module="Productos" action="update">
-                            <button
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => handleOpenEditModal(producto)}
-                            >
-                              Editar
-                            </button>
-                          </ProtectedComponent>
-                          <ProtectedComponent module="Productos" action="delete">
-                            <button
-                              className="btn btn-outline-danger btn-sm"
-                              onClick={() => console.log('acción clickeada: eliminar producto', producto._id)}
-                            >
-                              Eliminar
-                            </button>
-                          </ProtectedComponent>
-                        </div>
+                      <td className="fw-semibold">
+                        {row.stock || row['stock'] || 0}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card-footer bg-light d-flex justify-content-end gap-3 py-3">
+            <button
+              className="btn btn-danger fw-semibold"
+              onClick={handleCancelImport}
+              disabled={submitting || loading}
+            >
+              Cancelar
+            </button>
+            <button
+              className="btn btn-success fw-semibold"
+              onClick={handleConfirmImport}
+              disabled={submitting || loading}
+            >
+              Confirmar Carga
+            </button>
           </div>
         </div>
-      </div>
+      ) : (
+        /* AdminLTE Card Style */
+        <div className="card shadow-sm border-0">
+          <div className="card-header bg-dark text-white d-flex align-items-center justify-content-between py-3">
+            <div className="d-flex align-items-center gap-3">
+              <h5 className="m-0 text-white fw-bold">📦 Lista de Productos</h5>
+              <span className="badge bg-primary px-3 py-2" style={{ fontSize: '0.85rem' }}>{productos.length} Registros</span>
+            </div>
+            <ProtectedComponent module="Productos" action="create">
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-success btn-sm fw-semibold"
+                  onClick={handleOpenModal}
+                >
+                  ➕ Agregar Producto
+                </button>
+                <button
+                  className="btn btn-outline-light btn-sm fw-semibold"
+                  onClick={handleImportCSVClick}
+                >
+                  📥 Importar CSV
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept=".csv"
+                  onChange={handleFileChange}
+                />
+              </div>
+            </ProtectedComponent>
+          </div>
+          
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-striped table-hover table-bordered m-0 align-middle">
+                <thead className="table-secondary text-uppercase text-muted" style={{ fontSize: '0.85rem' }}>
+                  <tr>
+                    <th style={{ width: '150px' }}>Código</th>
+                    <th>Nombre del Producto</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th style={{ width: '120px' }}>Estado</th>
+                    <th style={{ width: '150px' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productos.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-4 text-muted">
+                        No se encontraron productos disponibles.
+                      </td>
+                    </tr>
+                  ) : (
+                    productos.map((producto) => (
+                      <tr key={producto._id}>
+                        <td>
+                          <code className="text-primary fw-bold">{producto.codigoBarras}</code>
+                        </td>
+                        <td>
+                          <div>
+                            <span className="fw-semibold">{producto.nombre}</span>
+                            {producto.descripcion && (
+                              <small className="d-block text-muted text-truncate" style={{ maxWidth: '300px' }}>
+                                {producto.descripcion}
+                              </small>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge bg-secondary text-uppercase px-2 py-1.5" style={{ fontSize: '0.75rem' }}>
+                            {producto.categoria}
+                          </span>
+                        </td>
+                        <td className="fw-semibold">
+                          ${producto.precio.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td>
+                          <span className={`fw-bold ${producto.stock <= 5 ? 'text-danger' : 'text-dark'}`}>
+                            {producto.stock}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge px-2.5 py-1.5 ${
+                            producto.status === 'ACTIVO' ? 'bg-success' : 'bg-danger'
+                          }`} style={{ fontSize: '0.75rem' }}>
+                            {producto.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="d-flex gap-2">
+                            <ProtectedComponent module="Productos" action="update">
+                              <button
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => handleOpenEditModal(producto)}
+                              >
+                                Editar
+                              </button>
+                            </ProtectedComponent>
+                            <ProtectedComponent module="Productos" action="delete">
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleDelete(producto._id)}
+                              >
+                                Eliminar
+                              </button>
+                            </ProtectedComponent>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pure Bootstrap 5 Creation Modal */}
       {showModal && (

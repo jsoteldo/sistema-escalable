@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PermissionsGuard } from '../auth/guards/permissions-guard';
 import { RequirePermission } from '../auth/decorators/require-permission.decorator';
 import { ProductosService } from './productos.service';
@@ -17,6 +18,13 @@ export class ProductosController {
     return this.productosService.create(createProductoDto);
   }
 
+  @Post('importar')
+  @RequirePermission('Productos', 'create')
+  @UseInterceptors(FileInterceptor('file'))
+  async importar(@UploadedFile() file: Express.Multer.File) {
+    return this.productosService.importar(file);
+  }
+
   @Patch(':id')
   @RequirePermission('Productos', 'update')
   async update(@Param('id') id: string, @Body() updateProductoDto: UpdateProductoDto) {
@@ -27,5 +35,11 @@ export class ProductosController {
   @RequirePermission('Productos', 'read')
   async findAll() {
     return this.productosService.findAll();
+  }
+
+  @Delete(':id')
+  @RequirePermission('Productos', 'delete')
+  async remove(@Param('id') id: string) {
+    return this.productosService.remove(id);
   }
 }
