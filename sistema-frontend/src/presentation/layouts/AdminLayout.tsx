@@ -4,6 +4,7 @@ import { usePermissions } from '../../core/hooks/usePermissions';
 import { ProtectedComponent } from '../components/ProtectedComponent';
 import { UsuariosPage } from '../pages/UsuariosPage';
 import { ProductosPage } from '../pages/ProductosPage';
+import { ClientesPage } from '../pages/ClientesPage';
 
 interface AdminLayoutProps {
   initialPath?: string;
@@ -192,10 +193,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ initialPath }) => {
             )}
 
             {activeMenu === 'clientes' && (
-              <div>
-                <h2>Módulo de Clientes</h2>
-                <p>Estás visualizando este contenido porque tu JWT incluye el permiso para leer el módulo de <strong>Clientes</strong>.</p>
-              </div>
+              <ClientesPage />
             )}
           </div>
         </main>

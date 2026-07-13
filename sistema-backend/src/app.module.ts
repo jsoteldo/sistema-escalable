@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProductosModule } from './productos/productos.module';
+import { ClientesModule } from './clientes/clientes.module';
 import { SeederService } from './seeder/seeder.service';
 import { UserSchema, UserSchemaName } from './schemas/user.schema';
 import { Role, RoleSchema } from './schemas/role.schema';
@@ -20,7 +21,8 @@ import { ProductoSchema, ProductoSchemaName } from './schemas/producto.schema';
     AuthModule,
     UsuariosModule,
     ProductosModule,
+    ClientesModule,
   ],
   providers: [SeederService],
 })
-export class AppModule {}
+export class AppModule { }
